@@ -1,0 +1,253 @@
+# 21 Bloch定理 Schottky定理 Picard小定理和Picard大定理
+
+> ...But I would not like to call it the Carathéodory constant C, as Mr. Carathéodory determined that it already had another name, namely 1/16. 
+> 
+> E. Landau, 1929
+>
+> ……但我并不想称它为Carathéodory常数C，因为Carathéodory先生已经确定它已有另一个名字，即1/16. 
+> 
+> E. 朗道，1929
+
+
+## 一、Bloch定理
+
+**问题** 设$G$为区域，$f$是$G$上不为常值的全纯函数. 由开映射定理，$f(G)$也是区域. $f(G)$中能包含的开圆盘的最大半径是多少？
+
+**定理21.1.1** 设$G$为有界区域，$f$在$\overline{G}$上连续且在$G$上是开映射. 任取$a\in G$，令$s=\min_{z\in \partial G}|f(z)-f(a)|$，若$s > 0$，则$B(f(a),s)\subseteq f(G)$. 
+
+**证明** 由于$G$有界，则$\overline{G}$是紧集. $f$在$\overline{G}$上连续，则$f(\overline{G})$有界，进而$f(G)$有界. $f$是开映射，则$f(G)$是有界开集，则$\overline{f(G)}$是紧集，则$\partial f(G)$是紧集. 则存在$w_0\in \partial f(G)$使得
+
+$$
+\mathrm{dist}(f(a),\partial f(G))=|w_0-f(a)|
+$$
+
+由于$w_0\in \partial f(G)$，则存在$f(z_n)\in f(G)$，满足$f(z_n)\to w_0,n\to \infty$. 而$\{z_n\}\subseteq G$是有界点列，进而有收敛子列，则不妨设$\{z_n\}$本身是收敛的，记其极限为$z_0$，则$z_0\in \overline{G}$. 由$f$连续，$f(z_0)=w_0$.
+
+假设$z_0\in G$，则取其在$G$中的邻域$U_0$，由于$f$是开映射，则$f(U_0)\subseteq f(G)$是开集，而$f(z_0)=w_0\in f(U_0)\subseteq f(G)$，则$w_0$是$f(G)$的内点，这与$w_0\in \partial f(G)$矛盾. 则$z_0\notin G$，则$z_0\in \partial G$. 则
+
+$$
+|w_0-f(a)|=|f(z_0)-f(a)|\geq \min_{z\in \partial G}|f(z)-f(a)|=s
+$$
+
+这说明
+
+$$
+\mathrm{dist}(f(a),\partial f(G))\geq s
+$$
+
+则$B(f(a),s)\subseteq f(G)$. $\square$
+
+**定理21.1.2** 设$a\in \mathbb{C}$，$r > 0$，$f$在$\overline{B(a,r)}$上全纯. 令
+
+$$
+|f'|_{B(a,r)}:=\max_{z\in \overline{B(a,r)}}|f'(z)|
+$$
+
+即$|f'|$在$\overline{B(a,r)}$上的最大值. 若
+
+$$
+|f'|_{B(a,r)}\leq 2|f'(a)|
+$$
+
+令
+
+$$
+R=(3-2\sqrt{2})r|f'(a)|
+$$
+
+则有
+
+$$
+B(f(a),R)\subseteq f(B(a,r))
+$$
+
+即：若$f$在$B(a,r)$的闭包上全纯，且在其上，$f'$的波动不太大，则$B(a,r)$在$f$下的像一定包含一个半径为$R$的圆盘，且这个圆盘以$f(a)$为圆心. 
+
+**证明** 考虑
+
+$$
+h(z):=f(z+ a)-f(a)
+$$
+
+则$h$在$\overline{B(0,r)}$上全纯，且$|h'|_{B(0,r)}\leq 2|h'(0)|$，令$R=(3-2\sqrt{2})r|h'(0)|$，只需证$B(h(0),R)\subseteq h(B(0,r))$. 
+
+令
+
+$$
+g(z)=h(z)-h'(0)z
+$$
+
+则对任意$z\in \overline{B(0,r)}$，
+
+$$
+\begin{aligned}
+    g(z)&=g(0)+\int_0^z g'(\xi)d\xi\\
+    &=\int_0^z(h'(\xi)-h'(0))d\xi\\
+\end{aligned}
+$$
+
+对于任何$b\in B(0,r)$，有
+
+$$
+\begin{aligned}
+    h'(b)-h'(0)&=\frac{1}{2\pi i}\int_{\partial B(0,r)}\frac{h'(\xi)}{\xi-b}d\xi-\frac{1}{2\pi i}\int_{\partial B(0,r)}\frac{h'(\xi)}{\xi}d\xi\\
+    &=\frac{b}{2\pi i}\int_{\partial B(0,r)}\frac{h'(\xi)}{\xi(\xi-b)}d\xi
+\end{aligned}
+$$
+
+则
+
+$$
+\begin{aligned}
+     |h'(b)-h'(0)|&\leq\frac{|b||h'|_{B(0,r)}}{2\pi}\int_{\partial B(0,r)}\frac{1}{|\xi(\xi-b)|}d\xi\\
+     &\leq\frac{|b||h'|_{B(0,r)}}{2\pi}\cdot 2\pi r\cdot \frac{1}{r(r-|b|)}\\
+     &\leq\frac{|b||h'|_{B(0,r)}}{r-|b|}    
+\end{aligned}
+$$
+
+则
+
+$$
+\begin{aligned}
+    |g(z)|&\leq \int_0^z|h'(\xi)-h'(0)|d\xi\\
+    &\leq \int_0^z\frac{|\xi||h'|_{B(0,r)}}{r-|\xi|}d\xi\\
+    &\leq\int_0^z\frac{|\xi||h'|_{B(0,r)}}{r-|z|}d\xi\\
+    &\leq \frac{|z|^2|h'|_{B(0,r)}}{2(r-|z|)}
+\end{aligned}
+$$
+
+则
+
+$$
+|h(z)-h'(0)z|\leq \frac{|z|^2|h'|_{B(0,r)}}{2(r-|z|)}\leq \frac{|z|^2|h'(0)|}{(r-|z|)}
+$$
+
+而由三角不等式，
+
+$$
+|h'(0)z|-|h(z)|\leq |h(z)-h'(0)z|
+$$
+
+则
+
+$$
+|h'(0)|\left(|z|-\frac{|z|^2}{r-|z|}\right) \leq |h(z)|
+$$
+
+易得$|z|\in (0,r)$时，上式左边在$|z|=\rho_0:=\left( 1 - \frac 1 2 \, \, \sqrt { 2 } \, \right) r$取得最大值$( 3 - 2 ~ \sqrt { 2 } ~ ) ~ r|h'(0)|=R$. 
+
+$h$在$\overline{B(0,\rho_0)}$上全纯，则在$B(0,\rho_0)$上是开映射，且
+
+$$
+\min_{z\in \partial B(0,\rho_0)} |h(z)-h(0)|=\min_{z\in \partial B(0,\rho_0)}|h(z)|\geq R
+$$
+
+由定理21.1.1，$B(h(0),\min_{z\in \partial B(0,\rho_0)}|h(z)|)\subseteq h(B(0,\rho_0))$，即$B(0,\min_{z\in \partial B(0,\rho_0)}|h(z)|)\subseteq h(B(0,\rho_0))$，则
+
+$$
+B(0,R)\subseteq h(B(0,r))
+$$
+
+即证原结论. $\square$
+
+**定理21.1.3：Bloch定理** 设$f$在$\mathbb{B}:=\overline{B(0,1)}$上全纯，$|f'(0)|=1$，则$f(\overline{B(0,1)})$包含半径为$1/12$的圆盘. 
+
+**证明** 考虑函数 $g(z) = |f'(z)| (1 - |z|)$，它在闭单位圆盘 $\overline{\mathbb{B}}$ 上连续，因此必定存在最大值点 $p \in \overline{\mathbb{B}}$，使得
+$$ M = g(p) = \max_{z \in \overline{\mathbb{B}}} |f'(z)| (1 - |z|). $$
+由于 $f'(0) = 1$，代入可得 $M \ge 1$. 
+令 $t = \frac{1}{2}(1 - |p|)$，则 $M = 2t |f'(p)|$. 
+对于圆盘 $B(p, t)$ 内的任意点 $z$，由三角不等式可得 $|z| \le |p| + t = \frac{1 + |p|}{2}$，从而有：
+$$ 1 - |z| \ge \frac{1 - |p|}{2} = t. $$
+因为 $M$ 是全局最大值，对任意 $z \in \overline{\mathbb{B}}$ 均满足 $|f'(z)|(1 - |z|) \le M$. 在 $B(p, t)$ 内，分母 $1 - |z| \ge t > 0$，因此：
+$$ |f'(z)| = \frac{|f'(z)| (1 - |z|)}{1 - |z|} \le \frac{2t |f'(p)|}{1 - |z|} \le \frac{2t |f'(p)|}{t} = 2|f'(p)|. $$
+这表明 $f'(z)$ 在圆盘 $B(p, t)$ 上的最大值不超过 $2|f'(p)|$，满足定理 21.1.2 的前提条件. 
+根据定理 21.1.2，在圆盘 $B(p, t)$ 上，像集 $f(B(p, t))$ 包含一个以 $f(p)$ 为中心的圆盘：
+$$ B(f(p), R) \subset f(B(p, t)) \subset f(\mathbb{B}), $$
+其中圆盘的半径 $R$ 为：
+$$ R = (3 - 2\sqrt{2}) t |f'(p)|. $$
+由于 $M = 2t |f'(p)| \ge 1$，可知 $t |f'(p)| \ge \frac{1}{2}$. 将此下界代入 $R$ 的表达式中可得：
+$$ R \ge (3 - 2\sqrt{2}) \times \frac{1}{2} = \frac{3}{2} - \sqrt{2}. $$
+而$3/2-\sqrt{2} > 1/12$，即证原结论. $\square$
+
+**注** （1）上述定理中像集所含圆盘的圆心一般不是$f(0)$. 例如，函数$f_n(z)=(e^{nz}-1)/n$. 显然$f_n$的像集不包含$-1/n$，故以$f(0)=0$为圆心的像集中的圆半径不可能超过$1/n$. 
+
+![](https://files.mdnice.com/user/99943/dcf33111-f507-4369-8acf-311a8fb4b848.png)
+
+（2）Bloch定理中的下界不是最优的. 
+
+令
+
+$$\mathcal{Z}:=\{f:f在\overline{B}上全纯,f'(0)=1\}$$
+
+再令
+
+$$
+\begin{aligned}
+    L=\inf \{r:r为f(\overline{B})所含最大圆盘的半径,f\in \mathcal{Z}\}\\
+    B=\inf \{r:r为f(\overline{B})所含最大非叠化圆盘的半径,f\in \mathcal{Z}\}
+\end{aligned}
+$$
+
+其中非叠化圆盘指函数在圆盘上有单值反函数. 
+
+则称$L$为Landau常数，$B$为Bloch常数. 则$B\leq L\geq \frac{3}{2}-\sqrt{2}$. 事实上它们有如下更精确的下界：
+
+$$
+0. 5 < L < 0. 5 4 4,\ \ 0. 4 3 3 < B < 0. 4 7 3.
+$$
+
+著名的Ahlfors-Grunsky猜想(1936)认为：
+
+$$B = \sqrt { \frac { \sqrt { 3 } - 1 } { 2 } } \, \, \, \frac { \Gamma \left( 1 / 3 \right) \Gamma ( 1 1 / 2 ) } { \Gamma \left( \frac { 1 } { 4 } \right) } = 0. 4 7 1 9 \dots, \, \, \, L = \frac { \Gamma \left( \frac { 1 } { 3 } \right) \Gamma \left( \frac { 5 } { 6 } \right) } { \Gamma \left( \frac { 1 } { 6 } \right) } = 0. 5 4 3 2 \dots.$$
+
+**例21.1.4** 举例说明Bloch常数小于$\pi/4$. 
+
+**解** 考虑Mobius变换
+
+$$
+\lambda ( z ) = \frac { 1 + z } { 1 - z }
+$$
+
+则
+
+$$
+z=\frac{1-\lambda(z)}{1+\lambda(z)}
+$$
+
+则
+
+$$
+z\in \overline{B(0,1)}\iff|z|\leq 1\iff |1-\lambda(z)|\leq |1+\lambda(z)|
+$$
+
+由基本的几何关系
+
+$$
+z在右半平面\iff|1-\lambda(z)|\leq |1+\lambda(z)|
+$$
+
+故$\lambda$将$\overline{B(0,1)}$映成右半平面. 
+
+设$\log$为对数主支，令$f(z)=\frac{1}{2}\log(\lambda(z))$，则$f$将$\overline{B}$映成区域$\{z:\Im (z)\in (-\pi/4,\pi/4)\}$，则该函数像集中的非叠化圆盘半径不可能超过$\pi/4$. $\square$
+
+**注意** 虽然该函数并非在闭单位圆盘上全纯，但我们可以理解，通过一个微小放缩可以说明$\pi/4$是$B$的一个上界. 
+
+**推论21.1.5** 设$f$在区域$G$上全纯，设$c\in G$满足$f'(c)\ne 0$，令$s=\mathrm{dist}(c,\partial G)$，则像集$f(G)$包含半径为$\frac{1}{12}s|f'(c)|$的圆盘. 
+
+**证明** 由Bloch定理进行显然的推广即得. 
+
+实际上，若$f$在圆盘$B(c,s)$的闭包上全纯，只需考虑函数
+
+$$g(z)=\frac{f(c+s({z-c}))}{sf'(c)}$$
+
+则$g$在$B(c,1)$上全纯，且$g'(c)=1$. 则$B(c,1)$的闭包在$g$下的像包含半径为$1/12$的圆盘，则$B(c,1)$的闭包在函数$z\mapsto f(c+s(z-c))$下的像包含半径为$(1/12)s|f'(c)|$的圆盘，而$B(c,1)$的闭包在函数$z\mapsto f(c+s(z-c))$下的像就是$\overline{B(c,s)}$在$z\mapsto f(z)$下的像. $\square$
+
+**注意** 由于$1/12$严格小于Bloch定理计算的下界$3/2-\sqrt{2}$，所以此推论是严格成立的. 
+
+**推论21.1.6** 若$f$是不为常值的整函数，则$f(\mathbb{C})$中包含任意大的圆盘. 
+
+---
+
+## 本节要点
+
+- Bloch定理：若函数在闭圆盘$\overline{B(c,s)}$上全纯，则在该闭圆盘的像集中包含半径为$(1/12)s|f'(c)|$的闭圆盘. 
