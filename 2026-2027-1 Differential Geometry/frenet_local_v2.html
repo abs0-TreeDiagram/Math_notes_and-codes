@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>局部 Frenet 标架 · κ 与 &lt;&#947;&#8244;,B&gt; 可调</title>
+<style>
+html,body{margin:0;height:100%;background:#0e0e12;color:#e8e8e8;overflow:hidden;font-family:ui-sans-serif,"Segoe UI","Microsoft YaHei",sans-serif}
+#cv{position:fixed;inset:0;display:block;cursor:grab}
+#panel{position:fixed;left:14px;top:14px;z-index:5;background:rgba(20,20,26,.92);border:1px solid #333;border-radius:10px;padding:13px 15px;font-size:13px;width:276px}
+#panel h3{margin:0 0 10px;font-size:14px}
+.row{display:flex;align-items:center;gap:8px;margin:5px 0}
+.row label{flex:1;font-size:12.5px}
+input[type=range]{width:100%;margin:2px 0}
+.num{font-family:ui-monospace,Consolas,monospace;color:#ffd166}
+.ck{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px;margin-top:6px}
+.ck label{display:flex;align-items:center;gap:4px}
+.btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+button{background:#26262c;color:#ddd;border:1px solid #3a3a44;border-radius:6px;padding:4px 9px;font-size:12px;cursor:pointer}
+button:hover{background:#33333c}
+#status{margin-top:9px;font-size:11.5px;color:#7ec8a0}
+#hud{position:fixed;right:14px;top:14px;z-index:5;background:rgba(20,20,26,.92);border:1px solid #333;border-radius:10px;padding:11px 15px;font-size:12.5px;line-height:1.75;font-family:ui-monospace,Consolas,monospace}
+#hud b{color:#ffd166}
+.hint{position:fixed;left:14px;bottom:12px;z-index:5;font-size:12px;color:#8b949e}
+#err{display:none;position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:9;background:#5a1d1d;border:1px solid #a33;border-radius:8px;padding:8px 14px;font-size:12.5px}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="panel">
+<h3>局部标架 · 曲率与 &#947;&#8244;&#183;B 可调 <span style="color:#ffd166">v2</span></h3>
+<div class="row"><label>&#954;（曲率）</label><span class="num" id="kV">2.000</span></div>
+<div class="row"><input id="kS" type="range" min="-1" max="0.6021" step="0.001" value="0.30103"></div>
+<div class="row"><label>&#10216;&#947;&#8244;,B&#10217;</label><span class="num" id="cV">0.500</span></div>
+<div class="row"><input id="cS" type="range" min="-4" max="4" step="0.01" value="0.5"></div>
+<div class="row"><label>附近曲线长度 L</label><span class="num" id="lV">4.00</span></div>
+<div class="row"><input id="lS" type="range" min="0.5" max="20" step="0.1" value="4"></div>
+<div class="ck"><label><input id="osc" type="checkbox" checked>曲率圆</label><label><input id="cpl" type="checkbox">密切平面</label><label><input id="ax" type="checkbox" checked>螺旋轴</label><label><input id="tl" type="checkbox" checked>切线</label><label><input id="af" type="checkbox" checked>自动取景</label><label><input id="auto" type="checkbox">自动旋转</label></div>
+<div class="btns"><button data-v="-58,20">等轴</button><button data-v="0,2">前视</button><button data-v="90,2">侧视</button><button data-v="0,88">顶视</button><button data-v="-35,40">斜视</button></div>
+<div id="status">正在初始化…</div>
+</div>
+<div id="hud"></div>
+<div class="hint">绿箭头长 = &#954;　·　品红箭头长 = &#10216;&#947;&#8244;,B&#10217;　·　白点 = 曲线上的点 s&#8320;（带白晕）　·　橙虚线 = 螺旋轴</div>
+<div id="err"></div>
+<script>
+(function(){
+var cv=document.getElementById('cv'),ctx=cv.getContext('2d'),errBox=document.getElementById('err');
+function fail(m){errBox.style.display='block';errBox.textContent='出错了：'+m;}
+window.onerror=function(m,s,l){fail(m+' (line '+l+')');};
+function cr(a,b){return [a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];}
+function sb(a,b){return [a[0]-b[0],a[1]-b[1],a[2]-b[2]];}
+function ad(a,b){return [a[0]+b[0],a[1]+b[1],a[2]+b[2]];}
+function mu(a,t){return [a[0]*t,a[1]*t,a[2]*t];}
+function ln(a){return Math.sqrt(a[0]*a[0]+a[1]*a[1]+a[2]*a[2]);}
+
+/* ---------- 参数 ---------- */
+var K=2.0, C=0.5, L=4.0;
+var yaw=-58*Math.PI/180, pitch=20*Math.PI/180, zoomU=1, auto=false, autofit=true;
+var WW=0,HH=0,dpr=1,CB=null,BASE=[0,0,0],CX=0,CY=0,S=60,RHO=1,RREL=3.6;
+
+/* ---------- 单位速率螺旋线：kappa=K, tau=C/K ---------- */
+function geo(){var k=K,t=C/K,q=k*k+t*t,cc=1/Math.sqrt(q),a=k/q,b=t/q;
+ return {k:k,t:t,q:q,cc:cc,a:a,b:b};}
+function pt(g,s){var f=s/g.cc;return [g.a*Math.cos(f),g.a*Math.sin(f),g.b*f];}
+function frame(g){var T=[0,g.a/g.cc,g.b/g.cc], N=[-1,0,0];
+ return {T:T,N:N,B:cr(T,N)};}
+
+/* ---------- 相机 ---------- */
+function basis(){var cp=Math.cos(pitch),sp=Math.sin(pitch);
+ var e=[cp*Math.cos(yaw),cp*Math.sin(yaw),sp], r=[-Math.sin(yaw),Math.cos(yaw),0];
+ return {e:e,r:r,u:cr(e,r)};}
+function vc(P,c){return [P[0]*c.r[0]+P[1]*c.r[1]+P[2]*c.r[2],
+                        P[0]*c.u[0]+P[1]*c.u[1]+P[2]*c.u[2],
+                        P[0]*c.e[0]+P[1]*c.e[1]+P[2]*c.e[2]];}
+function sc(dx,dy,de){var f=RREL/Math.max(RREL-de,0.9);
+ return [CX+dx*f*S*zoomU, CY-dy*f*S*zoomU];}
+function PR(P){var v=vc(sb(P,BASE),CB);return sc(v[0],v[1],v[2]);}
+
+function line(a,b,col,lw,dash){var p=PR(a),q=PR(b);
+ ctx.save();if(dash)ctx.setLineDash(dash);ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.lineCap='round';
+ ctx.beginPath();ctx.moveTo(p[0],p[1]);ctx.lineTo(q[0],q[1]);ctx.stroke();ctx.restore();}
+function arrow(a,b,col,lw){var p=PR(a),q=PR(b);
+ ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.lineCap='round';
+ ctx.beginPath();ctx.moveTo(p[0],p[1]);ctx.lineTo(q[0],q[1]);ctx.stroke();
+ var an=Math.atan2(q[1]-p[1],q[0]-p[0]),sz=8+lw*1.5;
+ ctx.beginPath();ctx.moveTo(q[0],q[1]);
+ ctx.lineTo(q[0]-sz*Math.cos(an-0.4),q[1]-sz*Math.sin(an-0.4));
+ ctx.lineTo(q[0]-sz*Math.cos(an+0.4),q[1]-sz*Math.sin(an+0.4));
+ ctx.closePath();ctx.fillStyle=col;ctx.fill();}
+function dot(P,r,col){var p=PR(P);ctx.beginPath();ctx.arc(p[0],p[1],r,0,6.2832);
+ ctx.fillStyle=col;ctx.fill();}
+function tag(P,txt,col,dx,dy){var p=PR(P);
+ ctx.font='600 12.5px ui-sans-serif,"Segoe UI","Microsoft YaHei",sans-serif';
+ var w=ctx.measureText(txt).width;
+ ctx.fillStyle='rgba(10,10,14,0.75)';ctx.fillRect(p[0]+dx-3,p[1]+dy-12,w+7,16);
+ ctx.fillStyle=col;ctx.fillText(txt,p[0]+dx,p[1]+dy);}
+function on(id){return document.getElementById(id).checked;}
+
+var SAMPLES=300;
+function draw(){
+ if(!WW)return;
+ CB=basis();CX=WW/2;CY=HH/2;
+ var g=geo(),fr=frame(g),i,pp,pts=[],all=[];
+ var B0=pt(g,0);BASE=B0;
+
+ for(i=0;i<=SAMPLES;i++){pp=pt(g,-L/2+L*i/SAMPLES);pts.push(pp);all.push(sb(pp,B0));}
+ all.push([0,0,0]);
+ all.push(mu(fr.T,1)); all.push(mu(fr.N,1)); all.push(mu(fr.B,1));
+ all.push(mu(fr.N,K)); all.push(mu(fr.B,C));
+ RHO=0; for(i=0;i<all.length;i++){var d=ln(all[i]); if(d>RHO)RHO=d;}
+ if(RHO<1e-9)RHO=1;
+
+ if(autofit){
+  var mx=1e-9,my=1e-9;
+  for(i=0;i<all.length;i++){var v=vc(mu(all[i],1/RHO),CB),
+    f=RREL/Math.max(RREL-v[2],0.9),x=Math.abs(v[0]*f),y=Math.abs(v[1]*f);
+   if(x>mx)mx=x; if(y>my)my=y;}
+  S=0.84*Math.min(WW/2/mx, HH/2/my);
+ }
+ ctx.setTransform(dpr,0,0,dpr,0,0);
+ ctx.fillStyle='#0e0e12';ctx.fillRect(0,0,WW,HH);
+
+ if(on('cpl')){
+  var Rp=0.8*RHO,n=48;
+  ctx.beginPath();
+  for(i=0;i<=n;i++){var th=6.2832*i/n,
+    P=ad(B0,ad(mu(fr.T,Rp*Math.cos(th)),mu(fr.N,Rp*Math.sin(th)))),qq=PR(P);
+   i?ctx.lineTo(qq[0],qq[1]):ctx.moveTo(qq[0],qq[1]);}
+  ctx.closePath();ctx.fillStyle='rgba(96,165,250,0.10)';ctx.fill();
+  ctx.strokeStyle='rgba(96,165,250,0.40)';ctx.lineWidth=1;ctx.stroke();}
+
+ if(on('ax')){
+  var zm=(g.b/g.cc)*(L/2); if(zm<0.35*RHO)zm=0.35*RHO; zm*=1.05;
+  line([0,0,-zm],[0,0,zm],'rgba(255,150,60,0.7)',1.7,[6,4]);
+  dot([0,0,zm],3.5,'rgba(255,160,70,0.95)');
+  tag([0,0,zm],'螺旋轴（参考）','rgba(255,175,95,0.95)',6,-8);
+  line([0,0,B0[2]],B0,'rgba(255,175,95,0.5)',1.1,[3,3]);
+  tag(mu(ad([0,0,B0[2]],B0),0.5),'a = '+g.a.toFixed(3),'rgba(255,195,125,0.9)',4,14);}
+ if(on('tl')){var e1=1.5*RHO;line(ad(B0,mu(fr.T,-e1)),ad(B0,mu(fr.T,e1)),'rgba(232,232,232,0.32)',1.2,[5,5]);}
+
+ if(on('osc')){
+  var Rc=1/K,cen=ad(B0,mu(fr.N,Rc)),n2=120;
+  ctx.beginPath();
+  for(i=0;i<=n2;i++){var th2=6.2832*i/n2,
+    P2=ad(cen,ad(mu(fr.T,Rc*Math.cos(th2)),mu(fr.N,-Rc*Math.sin(th2)))),q3=PR(P2);
+   i?ctx.lineTo(q3[0],q3[1]):ctx.moveTo(q3[0],q3[1]);}
+  ctx.strokeStyle='rgba(34,197,94,0.6)';ctx.lineWidth=1.5;ctx.setLineDash([4,4]);ctx.stroke();
+  ctx.setLineDash([]);
+  (function(){var q=PR(cen);ctx.beginPath();ctx.arc(q[0],q[1],5.5,0,6.2832);ctx.strokeStyle='#22c55e';ctx.lineWidth=2;ctx.stroke();ctx.beginPath();ctx.moveTo(q[0]-9,q[1]);ctx.lineTo(q[0]+9,q[1]);ctx.moveTo(q[0],q[1]-9);ctx.lineTo(q[0],q[1]+9);ctx.strokeStyle='rgba(34,197,94,0.7)';ctx.lineWidth=1;ctx.stroke();})();
+  line(B0,cen,'rgba(34,197,94,0.55)',1.2);tag(cen,'圆心（不在曲线上） r = 1/κ = '+(1/K).toFixed(2),'rgba(34,197,94,0.95)',10,-9);}
+
+ ctx.strokeStyle='#38bdf8';ctx.lineWidth=2.4;ctx.lineJoin='round';
+ ctx.beginPath();
+ for(i=0;i<pts.length;i++){var q4=PR(pts[i]);i?ctx.lineTo(q4[0],q4[1]):ctx.moveTo(q4[0],q4[1]);}
+ ctx.stroke();
+ ctx.strokeStyle='#ffffff';ctx.lineWidth=3.4;ctx.lineCap='round';ctx.beginPath();var st=0;
+ for(i=0;i<pts.length;i++){var ds=Math.abs(-L/2+L*i/SAMPLES);
+  if(ds<=Math.min(0.5,L*0.12)){var q6=PR(pts[i]);st?ctx.lineTo(q6[0],q6[1]):(ctx.moveTo(q6[0],q6[1]),st=1);}}
+ if(st)ctx.stroke();
+
+ line(B0,ad(B0,mu(fr.T,1)),'#9aa0a6',1.4);
+ line(B0,ad(B0,mu(fr.N,1)),'rgba(74,222,128,0.5)',1.4);
+ line(B0,ad(B0,mu(fr.B,1)),'rgba(96,165,250,0.5)',1.4);
+
+ arrow(B0,ad(B0,mu(fr.B,C)),'#e377c2',5.5);
+ arrow(B0,ad(B0,mu(fr.N,K)),'#22c55e',5.5);
+ (function(){var q=PR(B0);ctx.beginPath();ctx.arc(q[0],q[1],11,0,6.2832);ctx.fillStyle='rgba(255,255,255,0.22)';ctx.fill();ctx.beginPath();ctx.arc(q[0],q[1],6,0,6.2832);ctx.fillStyle='#ffffff';ctx.fill();ctx.strokeStyle='#0b0b0f';ctx.lineWidth=2.5;ctx.stroke();})();
+
+ tag(ad(B0,mu(fr.T,1)),'T（单位长 1）','#d9d9d9',8,-8);
+ tag(ad(B0,mu(fr.N,K)),'κN（长 = κ = '+K.toFixed(2)+'）','#4ade80',10,-7);
+ tag(ad(B0,mu(fr.B,C)),'⟨γ‴,B⟩B（长 = '+C.toFixed(2)+'）','#e377c2',10,17);
+ tag(B0,'s₀','#ffffff',-26,-11);
+
+ document.getElementById('hud').innerHTML=
+  'κ（曲率）　　<b>'+K.toFixed(3)+'</b><br>'+
+  '⟨γ‴,B⟩　　　　<b>'+C.toFixed(3)+'</b><br>'+
+  'τ = ⟨γ‴,B⟩/κ = <b>'+(C/K).toFixed(3)+'</b><br>'+
+  '曲率半径 1/κ = '+(1/K).toFixed(3)+'<br>'+
+  '|ω| = √(κ²+τ²) = '+Math.sqrt(K*K+(C/K)*(C/K)).toFixed(3)+'<br>'+
+  '窗口长度 L = '+L.toFixed(2)+'（±L/2）<br>'+'s₀ 到螺旋轴距离 = '+g.a.toFixed(3)+'（恒 ≠ 0）<br>'+'s₀ 到曲线距离 = 0（就在曲线上）<br>'+((g.a<0.06*L)?'<span style="color:#ffb86b">提示：a 极小 ⇒ 螺旋细如发丝，点几乎贴在轴上</span><br>':'')+
+  '<span style="color:#8b949e">绿箭头长 ⟶ κ<br>品红箭头长 ⟶ ⟨γ‴,B⟩<br>灰箭头 T 长 = 1 为标尺</span>';
+}
+function fit(){var w=window.innerWidth||0,h=window.innerHeight||0,d=document.documentElement;
+ if(!w||!h){w=w||d.clientWidth;h=h||d.clientHeight;}
+ WW=w;HH=h;dpr=window.devicePixelRatio||1;
+ cv.style.width=w+'px';cv.style.height=h+'px';
+ cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);
+ ctx.setTransform(dpr,0,0,dpr,0,0);draw();}
+
+var kS=document.getElementById('kS'),cS=document.getElementById('cS'),lS=document.getElementById('lS');
+K=Math.pow(10,parseFloat(kS.value));C=parseFloat(cS.value);L=parseFloat(lS.value);
+function upd(){document.getElementById('kV').textContent=K.toFixed(3);
+ document.getElementById('cV').textContent=C.toFixed(3);
+ document.getElementById('lV').textContent=L.toFixed(2);}
+kS.addEventListener('input',function(e){K=Math.pow(10,parseFloat(e.target.value));upd();draw();});
+cS.addEventListener('input',function(e){C=parseFloat(e.target.value);upd();draw();});
+lS.addEventListener('input',function(e){L=parseFloat(e.target.value);upd();draw();});
+['osc','cpl','tl','ax'].forEach(function(id){document.getElementById(id)
+ .addEventListener('change',draw);});
+document.getElementById('af').addEventListener('change',function(e){autofit=e.target.checked;draw();});
+document.getElementById('auto').addEventListener('change',function(e){auto=e.target.checked;});
+var bs=document.querySelectorAll('button[data-v]');
+for(var i=0;i<bs.length;i++){(function(b){b.addEventListener('click',function(){
+ var p=b.getAttribute('data-v').split(',');yaw=parseFloat(p[0])*Math.PI/180;
+ pitch=parseFloat(p[1])*Math.PI/180;draw();});})(bs[i]);}
+var drag=false,lx=0,ly=0;
+cv.addEventListener('pointerdown',function(e){drag=true;lx=e.clientX;ly=e.clientY;cv.style.cursor='grabbing';});
+cv.addEventListener('pointermove',function(e){if(!drag)return;
+ yaw-=(e.clientX-lx)*0.009;pitch=Math.max(-1.5,Math.min(1.5,pitch+(e.clientY-ly)*0.009));
+ lx=e.clientX;ly=e.clientY;draw();});
+cv.addEventListener('pointerup',function(){drag=false;cv.style.cursor='grab';});
+cv.addEventListener('pointerleave',function(){drag=false;cv.style.cursor='grab';});
+cv.addEventListener('wheel',function(e){e.preventDefault();
+ zoomU*=Math.exp(-e.deltaY*0.0011);zoomU=Math.max(0.05,Math.min(20,zoomU));draw();},{passive:false});
+window.addEventListener('resize',fit);
+(function loop(){if(auto){yaw+=0.007;draw();}requestAnimationFrame(loop);})();
+upd();fit();document.getElementById('status').textContent='已就绪（v2）：拖拽旋转 / 滚轮缩放';
+})();
+</script>
+</body>
+</html>
